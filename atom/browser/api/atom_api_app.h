@@ -123,6 +123,9 @@ class App : public AtomBrowserClient::Delegate,
   void ImportCertificate(const base::DictionaryValue& options,
                          const net::CompletionCallback& callback);
 #endif
+#if defined(OS_MACOSX)
+  void AddUserCert(const base::DictionaryValue& options);
+#endif
 
 #if defined(OS_WIN)
   // Get the current Jump List settings.

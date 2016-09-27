@@ -739,6 +739,18 @@ void App::OnCertificateManagerModelCreated(
 }
 #endif
 
+#if defined(OS_MACOSX)
+void App::AddUserCert(const base::DictionaryValue& options) {
+  CertDatabase *cert_db = CertDatabase::GetInstance();
+  std::string file_data, cert_path;
+  options.GetString("certificate", &cert_path);
+  if (base::ReadFileToString(base::FilePath(cert_path), &file_data)) {
+    auto cert = X509Certificate::createFromBytes(file_data);
+    cert_db->AddUserCert(cert);
+  }
+}
+#endif
+
 #if defined(OS_WIN)
 v8::Local<v8::Value> App::GetJumpListSettings() {
   JumpList jump_list(Browser::Get()->GetAppUserModelID());
@@ -833,6 +845,7 @@ void App::BuildPrototype(
                  base::Bind(&Browser::GetLoginItemSettings, browser))
       .SetMethod("setLoginItemSettings",
                  base::Bind(&Browser::SetLoginItemSettings, browser))
+      .SetMethod("getClientCerts", &App::GetClientCerts)
 #if defined(OS_MACOSX)
       .SetMethod("hide", base::Bind(&Browser::Hide, browser))
       .SetMethod("show", base::Bind(&Browser::Show, browser))
