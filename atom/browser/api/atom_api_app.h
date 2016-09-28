@@ -20,6 +20,15 @@
 #include "chrome/browser/certificate_manager_model.h"
 #endif
 
+#if defined(OS_MACOSX)
+#include <Security/Security.h>
+#include "net/cert/x509_certificate.h"
+#include "base/mac/scoped_cftyperef.h"
+#include "crypto/mac_security_services_lock.h"
+#endif
+
+using base::ScopedCFTypeRef;
+
 namespace base {
 class FilePath;
 }
@@ -125,6 +134,7 @@ class App : public AtomBrowserClient::Delegate,
 #endif
 #if defined(OS_MACOSX)
   void AddUserCert(const base::DictionaryValue& options);
+  void AddCertificatesFromBytes(const char* data, size_t length, SecExternalFormat format, net::X509Certificate::OSCertHandles* output);
 #endif
 
 #if defined(OS_WIN)

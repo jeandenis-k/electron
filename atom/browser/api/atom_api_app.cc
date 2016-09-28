@@ -48,6 +48,10 @@
 #include "base/strings/utf_string_conversions.h"
 #endif
 
+#if defined(OS_MACOSX)
+#include "net/cert/x509_util_mac.h"
+#endif
+
 using atom::Browser;
 
 namespace mate {
@@ -741,14 +745,49 @@ void App::OnCertificateManagerModelCreated(
 
 #if defined(OS_MACOSX)
 void App::AddUserCert(const base::DictionaryValue& options) {
-  CertDatabase *cert_db = CertDatabase::GetInstance();
-  std::string file_data, cert_path;
-  options.GetString("certificate", &cert_path);
-  if (base::ReadFileToString(base::FilePath(cert_path), &file_data)) {
-    auto cert = X509Certificate::createFromBytes(file_data);
-    cert_db->AddUserCert(cert);
+  // net::CertDatabase *cert_db = net::CertDatabase::GetInstance();
+  std::string cert_data;
+  options.GetString("certificate", &cert_data);
+  net::X509Certificate::OSCertHandles results;
+  App::AddCertificatesFromBytes(cert_data.c_str(), cert_data.length(), kSecFormatPKCS12, &results);
+}
+
+void App::AddCertificatesFromBytes(const char* data, size_t length, SecExternalFormat format, net::X509Certificate::OSCertHandles* output) {
+  SecExternalFormat input_format = format;
+  ScopedCFTypeRef<CFDataRef> local_data(CFDataCreateWithBytesNoCopy(
+      kCFAllocatorDefault, reinterpret_cast<const UInt8*>(data),
+      base::checked_cast<CFIndex>(length), kCFAllocatorNull));
+
+  CFArrayRef items = NULL;
+  OSStatus status;
+  {
+    base::AutoLock lock(crypto::GetMacSecurityServicesLock());
+    status = SecKeychainItemImport(local_data, NULL, &input_format,
+                                   NULL, 0, NULL, NULL, &items);
+  }
+
+  if (status) {
+    LOG(ERROR)
+        << "Unable to import items from data of length " << length;
+    return;
   }
 }
+
+  // auto certs = net::X509Certificate::AddCertificatesFromBytes(
+      // cert_data.c_str(), cert_data.length(), kSecFormatPKCS12);
+  // if (certs.size() > 0) {
+  //   int res = cert_db->AddUserCert(certs[0].get());
+  //   if(res == net::ERR_ADD_USER_CERT_FAILED) {
+  //     LOG(ERROR) << "Failed to load cert";
+  //   } else if(res == net::OK) {
+  //     LOG(ERROR) << "Loaded cert";
+  //   }
+  // } else {
+  //   LOG(ERROR) << "Failed to parse X509Certificate";
+  // }
+
+  // scoped_refptr<net::X509Certificate> cert = net::X509Certificate::CreateFromBytes(cert_data.c_str(), cert_data.length());
+// }
 #endif
 
 #if defined(OS_WIN)
@@ -845,7 +884,7 @@ void App::BuildPrototype(
                  base::Bind(&Browser::GetLoginItemSettings, browser))
       .SetMethod("setLoginItemSettings",
                  base::Bind(&Browser::SetLoginItemSettings, browser))
-      .SetMethod("getClientCerts", &App::GetClientCerts)
+      .SetMethod("AddUserCert", &App::AddUserCert)
 #if defined(OS_MACOSX)
       .SetMethod("hide", base::Bind(&Browser::Hide, browser))
       .SetMethod("show", base::Bind(&Browser::Show, browser))

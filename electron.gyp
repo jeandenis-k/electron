@@ -111,6 +111,7 @@
                     'external_binaries/Squirrel.framework',
                     'external_binaries/ReactiveCocoa.framework',
                     'external_binaries/Mantle.framework',
+                    'external_binaries/Security.framework',
                   ],
                 },
               ],
@@ -549,6 +550,7 @@
                   'external_binaries/Squirrel.framework',
                   'external_binaries/ReactiveCocoa.framework',
                   'external_binaries/Mantle.framework',
+                  'external_binaries/Security.framework'
                 ],
               },
               'copies': [
